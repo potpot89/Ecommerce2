@@ -1,68 +1,79 @@
-/*
-  Suggerimenti: 
-    V faccio un fetch sull'endpoint per ottenere le categorie
-    V creo i pulsanti per ogni categoria
-    V inserisco i pulsanti nel DOM
-    V creo il listener per i pulsanti
-    V ogni pulsante chiama la stessa funzione, ma con parametri diversi
-    - questa funzione farà la fetch all'endpoint per ottenere i prodotti della categoria specificata come argomento
-    - faccio un ciclo per generare un l'elenco di prodotti nel DOM
-    - per ogni prodotto potrei mostrare titolo, descrizione, prezzo e foto
-*/
-const buttonsContainer = document.getElementById(`buttonsContainer`);
-const productContainer = document.getElementById(`productContainer`);
+//links for API
+// https://fakestoreapi.com/products/categories
+// https://fakestoreapi.com/products/category/productname
+
+const buttonsContainer = document.getElementById(`navMenu`);
+
 let mainHTML = document.querySelector(`main`);
 
-//#TODO function to reset HTML
-function reset(main) {
-  while (main.firstChild) {
-    main.removeChild(main.firstChild);
-  }
+//fetch the categories from the API
+function getCategories() {
+  fetch("https://fakestoreapi.com/products/categories")
+    .then((response) => response.json()) // it convert the response of the server in a json file which is readable to human
+    .then((categories) => createButtons(categories)); // it takes the categories and runs the createButtons(categories) function, to create a button for each category -> write the createButtons() (1)
 }
 
-//fetch the categories from the API
-fetch("https://fakestoreapi.com/products/categories")
-  .then((res) => res.json())
-  //add elements in this function to manipulate the DOM
-  .then((json) => {
-    console.log(json);
+//(2) create the getProductsByCategory(category) function that fetches the products from the endpoint / API
+function getProductsByCategory(category) {
+  fetch(`https://fakestoreapi.com/products/category/${category}`)
+    //then create the response we will get from the server and transform it into json()
+    .then((response) => response.json())
+    //then take the elements we will get (that in this case we call `products` and pass them in a function that will give us the list of the products - create the function (3)
+    .then((products) => createProducts(products));
+}
 
-    //add a button in the DOM, for each category of products
-    json.forEach((cat) => {
-      let categoryButton = document.createElement(`button`);
-      categoryButton.textContent = cat;
-      buttonsContainer.appendChild(categoryButton);
-
-      //addEventListener to each button so that each of them calls the same function, that will have different parameters
-      categoryButton.addEventListener(`click`, getProduct);
-      function getProduct() {
-        //#TODO //need to make it reset each time a button is clicked on
-        reset(mainHTML); //this one is cancelling everything and not executing next line of code
-        function addProduct() {
-          let categoryLink =
-            "https://fakestoreapi.com/products/category/" + cat;
-          return fetch(categoryLink)
-            .then((res) => res.json())
-            .then((json) => {
-              console.log(json);
-              json.forEach((product) => {
-                console.log({ product });
-
-                //for each product add a div in the <main>
-
-                const objContainer = document.createElement("div");
-                productContainer.appendChild(objContainer);
-
-                //for each product return the key, value pairs in a div
-
-                Object.entries(product).forEach(([key, value]) => {
-                  const h3 = document.createElement("h3");
-                  h3.textContent = `${key}: ${value}`;
-                  objContainer.appendChild(h3);
-                });
-              });
-            });
-        }
-      }
-    });
+//(1) create the function createButtons(categories) that creates a button for each category
+function createButtons(categories) {
+  categories.forEach((category) => {
+    let button = document.createElement(`button`);
+    button.textContent = category;
+    navMenu.appendChild(button);
   });
+}
+
+//(3) create the createProducts(products) function
+function createProducts(products) {
+  //start by clearing the content every time another button is pressed
+  mainHTML.textContent = "";
+
+  //for each product, create the various html elements that have to be imported in the DOM
+  products.forEach((product) => {
+    let productContainer = document.createElement(`article`);
+    //add the title of each product to its article
+    let articleTitle = document.createElement(`h2`);
+    articleTitle.textContent = product.title;
+    mainHTML.appendChild(productContainer);
+    productContainer.appendChild(articleTitle);
+    //add the description of each element to its article
+    let description = document.createElement(`p`);
+    description.textContent = product.description;
+    productContainer.appendChild(description);
+    //add the image of each element to its article
+    let productImage = document.createElement(`img`);
+    productImage.src = product.image;
+    productContainer.appendChild(productImage);
+    //add the price of each element to its article
+    let price = document.createElement(`p`);
+    price.textContent = `Price: ${product.price}$`;
+    productContainer.appendChild(price);
+    //add the rating
+    let rating = document.createElement(`p`);
+    rating.textContent = `${product.rating.rate} ⭐ /
+    ${product.rating.count} reviews`;
+
+    productContainer.appendChild(rating);
+  });
+}
+
+getCategories();
+
+//addEventListener to the nav to trigger the same function for all buttons.
+//write an event function directly inside the addEventListener
+navMenu.addEventListener(`click`, (e) => {
+  //trigger the event only if an element of type button is clicked
+  if (e.target.tagName === `BUTTON`) {
+    //then run the function that is triggered when a button is pressed and create it back where the createButtons() is.
+    //e.target.textContent will return the category of the button that is pressed
+    getProductsByCategory(e.target.textContent);
+  }
+});
